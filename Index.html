@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitPulse - Modern Fitness Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Kanit', sans-serif; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white" x-data="fitApp()" x-cloak>
+
+  <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2 cursor-pointer" @click="currentTab = 'dashboard'">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <span class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">FitPulse</span>
+      </div>
+
+      <template x-if="isLoggedIn">
+        <div class="flex items-center gap-4">
+          <div class="hidden sm:flex items-center gap-3 bg-slate-800/60 px-3 py-1.5 rounded-full border border-slate-700">
+            <div class="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xs" x-text="user.name.charAt(0)"></div>
+            <span class="text-sm font-medium text-slate-200" x-text="user.name"></span>
+          </div>
+          <button @click="logout()" class="text-xs text-rose-400 hover:text-rose-300 font-medium border border-rose-500/30 hover:border-rose-500/60 px-3 py-1.5 rounded-lg transition">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> ออกจากระบบ
+          </button>
+        </div>
+      </template>
+
+      <template x-if="!isLoggedIn">
+        <button @click="showAuthModal = true" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20">
+          เข้าสู่ระบบ / สมัครสมาชิก
+        </button>
+      </template>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <div x-show="!isLoggedIn" class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-800 rounded-3xl p-8 mb-8 text-center relative overflow-hidden shadow-2xl">
+      <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-3">ยกระดับการออกกำลังกายของคุณวันนี้</h1>
+      <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto mb-6">วิเคราะห์การพัฒนา จับเวลาฝึกซ้อม และเรียนรู้ท่าทางออกกำลังกายที่ถูกต้องเพื่อป้องกันการบาดเจ็บ</p>
+      <button @click="showAuthModal = true" class="bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold px-8 py-3 rounded-xl hover:opacity-90 transition shadow-lg shadow-emerald-500/25">
+        เริ่มใช้งานฟรี
+      </button>
+    </div>
+
+    <div x-show="isLoggedIn" class="flex border-b border-slate-800 mb-6 gap-2 sm:gap-6 overflow-x-auto pb-1">
+      <button @click="currentTab = 'dashboard'" :class="currentTab === 'dashboard' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-2.5 px-3 border-b-2 font-medium text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-chart-line"></i> สรุปและวิเคราะห์
+      </button>
+      <button @click="currentTab = 'workouts'" :class="currentTab === 'workouts' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-2.5 px-3 border-b-2 font-medium text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-dumbbell"></i> ท่าและวิธีที่ถูกต้อง
+      </button>
+      <button @click="currentTab = 'timer'" :class="currentTab === 'timer' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'" class="py-2.5 px-3 border-b-2 font-medium text-sm sm:text-base flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-stopwatch"></i> นาฬิกาจับเวลา
+      </button>
+    </div>
+
+    <div x-show="isLoggedIn && currentTab === 'dashboard'" class="space-y-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium mb-1">แคลอรีเผาผลาญ</div>
+          <div class="text-2xl font-bold text-white">450 <span class="text-xs text-emerald-400">kcal</span></div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3">
+            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 70%"></div>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium mb-1">เวลาฝึกซ้อม</div>
+          <div class="text-2xl font-bold text-white">45 <span class="text-xs text-cyan-400">นาที</span></div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3">
+            <div class="bg-cyan-500 h-1.5 rounded-full" style="width: 55%"></div>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium mb-1">เป้าหมายสัปดาห์นี้</div>
+          <div class="text-2xl font-bold text-white">4/5 <span class="text-xs text-purple-400">วัน</span></div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-3">
+            <div class="bg-purple-500 h-1.5 rounded-full" style="width: 80%"></div>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium mb-1">ระดับฟิตเนส</div>
+          <div class="text-2xl font-bold text-amber-400">Level 7</div>
+          <div class="text-[10px] text-slate-500 mt-2">EXP: 8,450 / 10,000</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+          <h3 class="text-base font-bold text-slate-200 mb-4 flex items-center justify-between">
+            <span>วิเคราะห์การออกกำลังกายสัปดาห์นี้</span>
+            <span class="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg">เฉลี่ย 42 นาที/วัน</span>
+          </h3>
+          <div class="h-48 flex items-end justify-between gap-2 pt-6 px-2 border-b border-slate-800">
+            <template x-for="day in weekStats">
+              <div class="flex flex-col items-center flex-1 gap-2 h-full justify-end">
+                <div class="w-full bg-slate-800 rounded-t-lg relative group transition-all" :style="'height: ' + day.percent + '%'">
+                  <div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-[10px] text-emerald-400 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap" x-text="day.mins + ' นาที'"></div>
+                  <div class="w-full h-full bg-gradient-to-t from-emerald-600 to-cyan-400 rounded-t-lg opacity-80 hover:opacity-100"></div>
+                </div>
+                <span class="text-xs text-slate-400" x-text="day.name"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-200 mb-4">สัดส่วนกล้ามเนื้อที่บริหาร</h3>
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">อก & ไหล่ (Chest/Shoulders)</span>
+                  <span class="text-emerald-400 font-semibold">40%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2"><div class="bg-emerald-500 h-2 rounded-full" style="width: 40%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">ขา & สะโพก (Legs)</span>
+                  <span class="text-cyan-400 font-semibold">30%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2"><div class="bg-cyan-500 h-2 rounded-full" style="width: 30%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">หลัง & แขน (Back/Arms)</span>
+                  <span class="text-purple-400 font-semibold">20%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2"><div class="bg-purple-500 h-2 rounded-full" style="width: 20%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">แกนกลางลำตัว (Core)</span>
+                  <span class="text-amber-400 font-semibold">10%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2"><div class="bg-amber-500 h-2 rounded-full" style="width: 10%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div x-show="currentTab === 'workouts' || !isLoggedIn" class="space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">คลังท่าออกกำลังกายที่ถูกต้อง</h2>
+          <p class="text-slate-400 text-xs sm:text-sm">เรียนรู้การโฟกัสกล้ามเนื้อและเทคนิคเพื่อป้องกันการบาดเจ็บ</p>
+        </div>
+        <div class="flex gap-2 overflow-x-auto w-full sm:w-auto pb-1">
+          <button @click="selectedCategory = 'all'" :class="selectedCategory === 'all' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-300 border border-slate-800'" class="px-3 py-1.5 rounded-lg text-xs transition whitespace-nowrap">ทั้งหมด</button>
+          <button @click="selectedCategory = 'Legs'" :class="selectedCategory === 'Legs' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-300 border border-slate-800'" class="px-3 py-1.5 rounded-lg text-xs transition whitespace-nowrap">ช่วงขา</button>
+          <button @click="selectedCategory = 'Chest'" :class="selectedCategory === 'Chest' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-300 border border-slate-800'" class="px-3 py-1.5 rounded-lg text-xs transition whitespace-nowrap">หน้าอก</button>
+          <button @click="selectedCategory = 'Core'" :class="selectedCategory === 'Core' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-300 border border-slate-800'" class="px-3 py-1.5 rounded-lg text-xs transition whitespace-nowrap">แกนกลาง</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="item in filteredWorkouts" :key="item.id">
+          <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 transition flex flex-col justify-between group">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/20" x-text="item.category"></span>
+                <span class="text-xs text-slate-400" x-text="item.level"></span>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-1 group-hover:text-emerald-400 transition" x-text="item.name"></h3>
+              <p class="text-slate-400 text-xs mb-4" x-text="'เน้น: ' + item.target"></p>
+            </div>
+            <button @click="openExerciseDetail(item)" class="w-full bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-200 text-xs font-semibold py-2 rounded-xl transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-circle-info"></i> ดูวิธีทำอย่างถูกต้อง
+            </button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <div x-show="isLoggedIn && currentTab === 'timer'" class="max-w-md mx-auto space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden">
+        <h2 class="text-slate-400 text-sm font-semibold mb-6">นาฬิกาจับเวลาออกกำลังกาย / พักเซต</h2>
+        
+        <div class="text-6xl font-black text-white font-mono tracking-wider mb-8 drop-shadow-md" x-text="formatTime(timerSeconds)">
+          00:00
+        </div>
+
+        <div class="flex justify-center gap-4">
+          <button @click="toggleTimer()" :class="isTimerRunning ? 'bg-amber-500 hover:bg-amber-400' : 'bg-emerald-500 hover:bg-emerald-400'" class="text-slate-950 font-bold px-8 py-3 rounded-2xl text-base transition shadow-lg flex items-center gap-2">
+            <i class="fa-solid" :class="isTimerRunning ? 'fa-pause' : 'fa-play'"></i>
+            <span x-text="isTimerRunning ? 'หยุดชั่วคราว' : 'เริ่มจับเวลา'"></span>
+          </button>
+          <button @click="resetTimer()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-2xl text-base transition">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-800">
+          <div class="text-xs text-slate-500 mb-3">ตั้งเวลาพักด่วน (Rest Presets)</div>
+          <div class="flex justify-center gap-2">
+            <button @click="setPresetTimer(30)" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1.5 px-3 rounded-lg border border-slate-700">30 วิ</button>
+            <button @click="setPresetTimer(60)" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1.5 px-3 rounded-lg border border-slate-700">60 วิ</button>
+            <button @click="setPresetTimer(90)" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-1.5 px-3 rounded-lg border border-slate-700">90 วิ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div x-show="activeExerciseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" x-transition x-cloak>
+    <div @click.away="activeExerciseModal = false" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button @click="activeExerciseModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center rounded-full bg-slate-800">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <template x-if="selectedExercise">
+        <div>
+          <div class="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-2" x-text="selectedExercise.category"></div>
+          <h3 class="text-2xl font-bold text-white mb-1" x-text="selectedExercise.name"></h3>
+          <p class="text-xs text-slate-400 mb-6" x-text="'กล้ามเนื้อหลัก: ' + selectedExercise.target"></p>
+
+          <div class="space-y-4">
+            <div>
+              <h4 class="text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-emerald-400"></i> ขั้นตอนการฝึกที่ถูกต้อง
+              </h4>
+              <ol class="list-decimal list-inside text-xs text-slate-300 space-y-2 leading-relaxed bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+                <template x-for="(step, idx) in selectedExercise.steps" :key="idx">
+                  <li class="pl-1" x-text="step"></li>
+                </template>
+              </ol>
+            </div>
+
+            <div>
+              <h4 class="text-sm font-bold text-rose-400 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> ข้อควรระวัง (ข้อผิดพลาดที่มักพบ)
+              </h4>
+              <div class="text-xs text-rose-300/90 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl" x-text="selectedExercise.mistakes"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div x-show="showAuthModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" x-transition x-cloak>
+    <div @click.away="showAuthModal = false" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl relative">
+      <button @click="showAuthModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex border-b border-slate-800 mb-6">
+        <button @click="authMode = 'login'" :class="authMode === 'login' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400'" class="flex-1 pb-3 text-center font-bold text-sm border-b-2 transition">เข้าสู่ระบบ</button>
+        <button @click="authMode = 'register'" :class="authMode === 'register' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400'" class="flex-1 pb-3 text-center font-bold text-sm border-b-2 transition">สมัครสมาชิก</button>
+      </div>
+
+      <form x-show="authMode === 'login'" @submit.prevent="handleLogin()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">ชื่อผู้ใช้ / อีเมล</label>
+          <input type="text" x-model="loginForm.email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">รหัสผ่าน</label>
+          <input type="password" x-model="loginForm.password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition mt-2">เข้าสู่ระบบ</button>
+      </form>
+
+      <form x-show="authMode === 'register'" @submit.prevent="handleRegister()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">ชื่อ-นามสกุล</label>
+          <input type="text" x-model="registerForm.name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">อีเมล</label>
+          <input type="email" x-model="registerForm.email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">รหัสผ่าน</label>
+          <input type="password" x-model="registerForm.password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+        </div>
+        <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition mt-2">สร้างบัญชีผู้ใช้</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-600">
+    FitPulse &copy; 2026 - Fitness Application UI for GitHub Pages
+  </footer>
+
+  <script>
+    function fitApp() {
+      return {
+        isLoggedIn: false,
+        showAuthModal: false,
+        authMode: 'login',
+        currentTab: 'dashboard',
+        selectedCategory: 'all',
+        activeExerciseModal: false,
+        selectedExercise: null,
+
+        // Auth Form Data
+        user: { name: 'GymBro', email: '' },
+        loginForm: { email: '', password: '' },
+        registerForm: { name: '', email: '', password: '' },
+
+        // Timer State
+        timerSeconds: 0,
+        timerInterval: null,
+        isTimerRunning: false,
+
+        // Week Stats Data
+        weekStats: [
+          { name: 'จ.', mins: 30, percent: 50 },
+          { name: 'อ.', mins: 45, percent: 75 },
+          { name: 'พ.', mins: 60, percent: 100 },
+          { name: 'พฤ.', mins: 0, percent: 10 },
+          { name: 'ศ.', mins: 50, percent: 80 },
+          { name: 'ส.', mins: 40, percent: 65 },
+          { name: 'อา.', mins: 0, percent: 10 }
+        ],
+
+        // Workouts Library
+        workouts: [
+          {
+            id: 1,
+            name: 'Barbell Squat (สควอท)',
+            category: 'Legs',
+            level: 'ปานกลาง',
+            target: 'ต้นขาหน้า, สะโพก, น่อง',
+            steps: [
+              'วางบาร์เบลไว้บนกล้ามเนื้อสะบักด้านหลัง ยืนเท้ากว้างเท่าความกว้างไหล่',
+              'เกร็งหน้าท้อง หายใจเข้า แล้วย่อตัวลงโดยดันสะโพกไปด้านหลัง',
+              'ย่อลงจนต้นขาขนานกับพื้น รักษาระดับหลังให้ตรง',
+              'หายใจออก พร้อมดันตัวกลับขึ้นสู่ท่าเริ่มต้นโดยใช้แรงจากส้นเท้า'
+            ],
+            mistakes: 'เข่าพับเข้าด้านใน, ส้นเท้ายกลอยขึ้นจากพื้น, หลังงอขณะยก'
+          },
+          {
+            id: 2,
+            name: 'Push-Up (วิดพื้น)',
+            category: 'Chest',
+            level: 'เริ่มต้น',
+            target: 'หน้าอก, ไหล่หน้า, หลังแขน',
+            steps: [
+              'วางมือบนพื้นกว้างกว่าความกว้างไหล่เล็กน้อย',
+              'เกร็งลำตัวให้เป็นเส้นตรงตั้งแต่หัวจรดส้นเท้า',
+              'งอข้อศอกลดลำตัวลงจนอกเกือบแตะพื้น',
+              'ดันลำตัวขึ้นกลับสู่ท่าเดิมโดยไม่แอ่นหลัง'
+            ],
+            mistakes: 'สะโพกตกหรือแอ่นหลังมากเกินไป, กางข้อศอกออกกว้างเกินไป (ควรทำมุม 45 องศา)'
+          },
+          {
+            id: 3,
+            name: 'Plank (แพลงก์)',
+            category: 'Core',
+            level: 'เริ่มต้น',
+            target: 'แกนกลางลำตัว, หน้าท้อง',
+            steps: [
+              'ตั้งข้อศอกลงบนพื้นให้อยู่ใต้หัวไหล่พอดี',
+              'เหยียดขาตึง เกร็งหน้าท้อง สะโพก และต้นขา',
+              'รักษาลำตัวให้เป็นเส้นตรง ขนานกับพื้น',
+              'ค้างไว้ตามเวลาที่กำหนด พร้อมหายใจเข้าออกเป็นจังหวะ'
+            ],
+            mistakes: 'ยกสะโพกสูงเกินไป หรือปล่อยให้สะโพกตกพื้น'
+          },
+          {
+            id: 4,
+            name: 'Dumbbell Romanian Deadlift',
+            category: 'Legs',
+            level: 'ปานกลาง',
+            target: 'ต้นขาด้านหลัง, สะโพก',
+            steps: [
+              'ถือดัมเบลไว้หน้าขา ยืนแยกเท้ากว้างเท่าสะโพก',
+              'ดันสะโพกไปด้านหลังพร้อมค่อยๆ ก้มลำตัวลง โดยให้ดัมเบลชิดขาตลอดเวลา',
+              'ก้มลงจนรู้สึกตึงที่ต้นขาด้านหลัง (หลังต้องตรงตลอดเวลา)',
+              'เกร็งสะโพกดันตัวกลับขึ้นมายืนตรง'
+            ],
+            mistakes: 'หลังงอขณะก้มตัวลง, งอเข่ามากเกินไปเหมือนท่าสควอท'
+          }
+        ],
+
+        get filteredWorkouts() {
+          if (this.selectedCategory === 'all') return this.workouts;
+          return this.workouts.filter(w => w.category === this.selectedCategory);
+        },
+
+        openExerciseDetail(item) {
+          this.selectedExercise = item;
+          this.activeExerciseModal = true;
+        },
+
+        // Timer Functions
+        toggleTimer() {
+          if (this.isTimerRunning) {
+            clearInterval(this.timerInterval);
+            this.isTimerRunning = false;
+          } else {
+            this.isTimerRunning = true;
+            this.timerInterval = setInterval(() => {
+              this.timerSeconds++;
+            }, 1000);
+          }
+        },
+        resetTimer() {
+          clearInterval(this.timerInterval);
+          this.isTimerRunning = false;
+          this.timerSeconds = 0;
+        },
+        setPresetTimer(seconds) {
+          this.resetTimer();
+          this.timerSeconds = seconds;
+        },
+        formatTime(sec) {
+          const m = Math.floor(sec / 60).toString().padStart(2, '0');
+          const s = (sec % 60).toString().padStart(2, '0');
+          return `${m}:${s}`;
+        },
+
+        // Auth Handlers
+        handleLogin() {
+          this.user.name = this.loginForm.email.split('@')[0] || 'Member';
+          this.isLoggedIn = true;
+          this.showAuthModal = false;
+        },
+        handleRegister() {
+          this.user.name = this.registerForm.name || 'Member';
+          this.isLoggedIn = true;
+          this.showAuthModal = false;
+        },
+        logout() {
+          this.isLoggedIn = false;
+          this.currentTab = 'dashboard';
+        }
+      }
+    }
+  </script>
+</body>
+</html>
